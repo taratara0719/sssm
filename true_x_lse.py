@@ -42,11 +42,7 @@ def main():
     print("pred_phi_true_x", pred_phi_true_x)
     print("pred_phi_pred_x", pred_phi_pred_x)
     print("true_phi         ", phi1, phi2)
-    print(x.shape)
     
-    
-
-
     
 
 if __name__ == '__main__':

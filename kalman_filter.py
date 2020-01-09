@@ -9,6 +9,7 @@ def kf(T, Y, x0, P0, F, H, Q, R):
     P = P0
 
     X = [x]
+    
 
     for i in range(T-1):
         # prediction
@@ -38,11 +39,7 @@ def main():
     x = np.genfromtxt(fname='../data/hidden_states2.txt', delimiter=',')
     y = np.genfromtxt(fname='../data/observed_states2.txt')
     Y = y.reshape(len(y), 1)
-    
-    x0 = np.zeros((2, 1))
-    P0 = np.zeros((2, 2))
 
-    
     r = 1  # number of source components
 
     np.random.seed(0)
@@ -50,7 +47,7 @@ def main():
     #  AR(2)model parameter
     phi1 = np.random.normal(0, 0.3)
     phi2 = np.random.normal(0, 0.3)
-    sigma = 0.2
+    sigma = 1
     F = np.mat([[phi1, phi2], [1, 0]])  
     Q = np.mat([[sigma, 0], [0, 0]])
     print(phi1)
@@ -59,16 +56,20 @@ def main():
     #  observation model
     c = 1
     H = np.mat([c, 0])
-    R = 0.2
+    R = 0.3
 
+    x0 = np.random.normal(0, 0.3, (2, 1))
+    P0 = np.zeros((2, 2))
+    print(x0)
     #  kalman filtering
     X = kf(len(x), Y, x0, P0, F, H, Q, R)
     
     #  グラフの描画
     
-    plt.plot(x[:, 1], label='x')
+    plt.plot(x[:, 0], label='x')
     a, b = np.array(np.concatenate(X,axis=1))
-    plt.plot(b, label='predicted_x')
+    plt.plot(a, label='predicted_x')
+    
 
     plt.title("Hidden states")
     plt.xlabel('time')

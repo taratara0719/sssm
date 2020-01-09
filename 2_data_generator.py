@@ -14,18 +14,18 @@ def main():
     #  AR(2)model parameter
     phi1 = np.random.normal(0, 0.3)
     phi2 = np.random.normal(0, 0.3)
-    sigma = 0.2
-    F = np.array([[phi1, phi2], [1, 0]])
-    Q = np.array([[sigma, 0], [0, 0]])
+    sigma = 1
+    F = np.mat([[phi1, phi2], [1, 0]])
+    Q = np.mat([[sigma, 0], [0, 0]])
 
     #  observation model
     c = 1
-    H = np.array([c, 0])
-    R = 0.2
+    H = np.mat([c, 0])
+    R = 0.3
 
     #  test data generating
-    T = 100  # number of sampling
-    x = np.random.normal(0, 0.3, (2, 1))
+    T = 10000  # number of sampling
+    x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     y = 0
     
     X = [x]
@@ -35,20 +35,18 @@ def main():
         #x_ = np.hstack((X, x))
         X.append(x)
         y = H @ x + np.random.normal(0, R)
-        y_ = np.hstack((Y, y))
         Y.append(y)
-    print(y_.shape)
     
+
     plt.subplot(2, 1, 1)
     #for i in range(r):
         #plt.plot(x[:,i], label='x{}'.format(i+1))
     a, b = np.array(np.concatenate(X, axis=1))
-    
     plt.plot(a, label='x')
     plt.legend()
-
+    
     plt.subplot(2, 1, 2)
-    plt.plot(y_, label='y', color='red')
+    plt.plot(Y, label='y', color='red')
     plt.xlabel('time')
     plt.legend()
 
