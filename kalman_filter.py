@@ -17,11 +17,11 @@ def kf(T, Y, x0, P0, F, H, Q, R):
         P_ = Q + F @ P @ F.T
         
         #filtering
-        yi = Y[i+1] - H @ x_
-        S = H @ P_ @ H.T + R
-        K = P_ @ H.T / S
+        yi = Y[i+1] - H * x_
+        S = H * P_ * H.T + R
+        K = P_ * H.T * S.I
         x = x_ + K * yi
-        P = P_ - K * H @ P_
+        P = P_ - K * H * P_
         X.append(x)
     """
     print("yi", yi)
@@ -56,7 +56,7 @@ def main():
     #  observation model
     c = 1
     H = np.mat([c, 0])
-    R = 0.3
+    R = 1
 
     x0 = np.random.normal(0, 0.3, (2, 1))
     P0 = np.zeros((2, 2))
@@ -67,6 +67,8 @@ def main():
     #  グラフの描画
     
     plt.plot(x[:, 0], label='x')
+    plt.plot(Y, label='y')
+
     a, b = np.array(np.concatenate(X,axis=1))
     plt.plot(a, label='predicted_x')
     

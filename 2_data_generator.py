@@ -21,7 +21,7 @@ def main():
     #  observation model
     c = 1
     H = np.mat([c, 0])
-    R = 0.3
+    R = 1
 
     #  test data generating
     T = 10000  # number of sampling
