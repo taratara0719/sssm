@@ -2,9 +2,99 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import math
+from tqdm import tqdm
 
 sns.set(style='darkgrid')
 
+class kf_lse(object):
+
+    def __init__(self, phi1, phi2, p, q, T):
+        self.phi1 = phi1
+        self.phi2 = phi2
+        self.p = p
+        self.q = q
+        self.T = T
+    
+    #  初期値
+    def init_initial(self, y):
+        self.x = np.mat([[0.2936214], [0.67226796]])
+        self.P = np.zeros((2, 2))
+        self.sigma = 1
+        self.Q = np.mat([[self.sigma, 0], [0, 0]])
+        self.F = np.mat([[self.phi1, self.phi2], [1, 0]])
+        self.H = np.mat([1, 0])
+        self.R = 1
+        self.a = 0
+        self.b = 0
+        self.c = 0
+        self.d = 0
+        self.e = 0
+
+    #  最小二乗法
+    def lse(self, x):
+        
+        self.a += x[-3]**2
+        self.c += x[-1] * x[-2]
+        self.b += x[-3]**2
+        self.d += x[-1] * x[-2]
+        self.e += x[-1] * x[-3]
+        if len(x) >= 3:
+            self.phi1 = (self.b * self.c - self.d * self.e) / (self.a * self.b - self.d**2)
+            self.phi2 = (self.a * self.e - self.c * self.d) / (self.a * self.b - self.d**2)
+            self.F = np.mat([[self.phi1, self.phi2], [1, 0]])
+
+        return self
+
+    #  カルマンフィルター
+    def kf(self, y):
+        self.init_initial(y)
+
+        self.X = [self.x]
+        self.phi1_ = [self.phi1]
+        self.phi2_ = [self.phi2]
+        K_ = [self.K]
+        sigma_ = [self.sigma]
+        nu_ = [self.nu]
+        
+        for i in tqdm(range(self.T-1)):
+            # prediction
+            x_ = self.F @ self.x
+            P_ = self.Q + self.F @ self.P @ self.F.T
+            
+            #filtering
+            yi = y[i+1] - self.H @ x_
+            S = self.H @ P_ @ self.H.T + self.R
+            K = P_ @ self.H.T / S
+            self.x = x_ + K * yi
+            self.P = P_ - K * self.H @ P_
+            self.nu = self.Q - self.Q @ self.H.T /S @ self.H @ self.Q  + K * yi * yi @ K.T
+
+            #  sigma filtering
+            if i >= self.p and i >= self.q:
+                ar = 0
+                ma = 0
+                for j in range(1, self.p):
+                    ar += self.alpha * math.log(sigma_[-j])
+                for k in range(1, self.q):
+                    ma += self.beta * math.log(nu_[-k]) 
+                s = math.log(sigma0**2) + ar + ma
+                self.sigma = math.log(s)
+            
+            self.X.append(self.x)
+            n, m = np.array(np.concatenate(self.X,axis=1))
+            if i >= 1:
+                self.lse(n)
+            self.phi1_.append(self.phi1)
+            self.phi2_.append(self.phi2)
+        
+            yi_.append(yi)
+            K_.append(K)
+            Q_.append(Q)
+            sigma_.append(sigma)
+            nu_.append(nu)
+
+
+        return self
 def kf(T, Y, sigma0, x0, P0, F, H, R, p, q, alpha, beta):
     x = x0
     P = P0
@@ -30,10 +120,10 @@ def kf(T, Y, sigma0, x0, P0, F, H, R, p, q, alpha, beta):
         #filtering
         yi = Y[i+1] - H @ x_    # innovation
         S = H @ P_ @ H.T + R    # innovation covariance
-        K = P_ @ H.T @ np.linalg.inv(S)        # Optimal Kalman gain
+        K = P_ @ H.T / S        # Optimal Kalman gain
         x = x_ + K * yi         # posteriori state estimate 
         P = P_ - K * H @ P_     # posteriori estimate covariance
-        nu = Q - Q @ H.T @ np.linalg.inv(S) @ H @ Q  + K * yi * yi @ K.T
+        nu = Q - Q @ H.T /S @ H @ Q  + K * yi * yi @ K.T
         
         if i >= p and i >= q:
             ar = 0

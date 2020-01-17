@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from tqdm import tqdm
 
 
 sns.set(style='darkgrid')
@@ -48,7 +49,8 @@ class kf_lse(object):
         self.phi1_ = [self.phi1]
         self.phi2_ = [self.phi2]
         
-        for i in range(self.T-1):
+        
+        for i in tqdm(range(self.T-1)):
             # prediction
             x_ = self.F @ self.x
             P_ = self.Q + self.F @ self.P @ self.F.T
@@ -66,7 +68,16 @@ class kf_lse(object):
                 self.lse(n)
             self.phi1_.append(self.phi1)
             self.phi2_.append(self.phi2)
-            print(i)
+
+        
+        print("yi", yi)
+        print("x_", x_)
+        print("P", self.P.shape)
+        print("P_", P_.shape)
+        print("K", K.shape)
+        print("H", self.H.shape)
+        
+            
 
 
         return self
@@ -85,7 +96,7 @@ def main():
 
     print(pred.phi1_[-1], pred.phi2_[-1])
 
-    plt.subplot(2, 1, 1)
+    plt.subplot(3, 1, 1)
     a, b = np.array(np.concatenate(pred.X,axis=1))
     plt.plot(x[:, 0], label='x')
     plt.plot(a, label='predicted_x')
@@ -94,10 +105,17 @@ def main():
     plt.ylabel('x')
     plt.legend()
 
-    plt.subplot(2, 1, 2)
-    plt.plot(pred.phi1_, label='phi1')
-    plt.plot(pred.phi2_, label='phi2')
-    plt.title("parameter")
+    plt.subplot(3, 1, 2)
+    plt.plot(pred.phi1_, label='estimate')
+    plt.hlines(y = 0.529, xmin = 0, xmax = len(x[:, 0]), label = 'true', color='orange')
+    plt.title("phi1")
+    plt.xlabel('time')
+    plt.legend()
+
+    plt.subplot(3, 1, 3)
+    plt.plot(pred.phi2_, label='estimate')
+    plt.hlines(y = 0.120, xmin = 0, xmax = len(x[:, 0]), label = 'true', color='orange')
+    plt.title("phi2")
     plt.xlabel('time')
     plt.legend()
 
