@@ -32,6 +32,8 @@ class kf_lse(object):
         self.c = 0
         self.d = 0
         self.e = 0
+        self.nu = 0
+        self.K = 0
     
 
     #  最小二乗法
@@ -56,9 +58,10 @@ class kf_lse(object):
         self.X = [self.x]
         self.phi1_ = [self.phi1]
         self.phi2_ = [self.phi2]
-        K_ = [K]
+        self.K_ = [self.K]
         self.sigma_ = [self.sigma]
-        nu_ = [nu]
+        self.nu_ = [self.nu]
+        self.Q_ = [self.Q]
         
         for i in tqdm(range(self.T-1)):
             # prediction
@@ -68,34 +71,35 @@ class kf_lse(object):
             #filtering
             yi = y[i+1] - self.H @ x_
             S = self.H @ P_ @ self.H.T + self.R
-            K = P_ @ self.H.T / S
-            self.x = x_ + K * yi
-            self.P = P_ - K * self.H @ P_
-            nu = self.Q - self.Q @ self.H.T /S @ self.H @ self.Q  + K * yi * yi @ K.T
+            self.K = P_ @ self.H.T / S
+            self.x = x_ + self.K * yi
+            self.P = P_ - self.K * self.H @ P_
+            self.nu = self.Q - self.Q * self.H.T /S * self.H * self.Q  + self.K * yi * yi * self.K.T
+
+            self.K_.append(self.K)
+            self.Q_.append(self.Q)
+            self.nu_.append(self.nu)
 
             #  sigma filtering
             if i >= self.p and i >= self.q:
                 ar = 0
                 ma = 0
                 for j in range(1, self.p):
-                    ar += self.alpha * math.log(self.sigma_[-j])
+                    ar += self.alpha * np.log(self.sigma_[-j])
                 for k in range(1, self.q):
-                    ma += self.beta * math.log(nu_[-k]) 
-                s = math.log(self.sigma0**2) + ar + ma
-                self.sigma = math.log(s)
+                    ma += self.beta * np.log(self.nu_[-k]) 
+                s = np.log(self.sigma_[0]) + ar + ma
+                self.sigma = np.exp(s)
+            self.sigma_.append(self.sigma)
             
+            #  phi iteration
             self.X.append(self.x)
             n, m = np.array(np.concatenate(self.X,axis=1))
             if i >= 1:
                 self.lse(n)
             self.phi1_.append(self.phi1)
             self.phi2_.append(self.phi2)
-        
-            K_.append(K)
-            self.Q_.append(self.Q)
-            self.sigma_.append(self.sigma)
-            nu_.append(nu)
-
+            
         return self
     
 
@@ -129,25 +133,40 @@ def main():
     alpha = 0
     beta = 0.5
 
-    X = kf_lse(0.529, 0.120, 0, 1, 0, 0.5, len(x))
+    pred = kf_lse(0.529, 0.120, 0, 2, 0, 0.5, len(x)).kf(y)
     
     
-    plt.plot(x[:, 1], label='x')
-    a, b = np.array(np.concatenate(X,axis=1))
-    plt.plot(b, label='predicted_x')
-
-    plt.xlabel('time')
-    plt.ylabel('x_predict')
+    plt.subplot(4, 1, 1)
+    a, b = np.array(np.concatenate(pred.X,axis=1))
+    plt.plot(x[:, 0], label='x')
+    plt.plot(a, label='predicted_x')
+    
+    plt.title("Hidden states")
+    plt.ylabel('x')
     plt.legend()
-    
 
-    plt.savefig('../fig/predicted_states.png')
+    plt.subplot(4, 1, 2)
+    plt.plot(pred.phi1_, label='estimate')
+    plt.hlines(y = 0.529, xmin = 0, xmax = len(x[:, 0]), label = 'true', color='orange')
+    plt.title("phi1")
+    plt.xlabel('time')
+    plt.legend()
+
+    plt.subplot(4, 1, 3)
+    plt.plot(pred.phi2_, label='estimate')
+    plt.hlines(y = 0.120, xmin = 0, xmax = len(x[:, 0]), label = 'true', color='orange')
+    plt.title("phi2")
+    plt.xlabel('time')
+    plt.legend()
+
+    # plt.subplot(4, 1, 4)
+    # plt.plot(pred.sigma_, label='sigma')
+    # plt.xlabel('time')
+    # plt.legend()
+
+    plt.savefig('../fig/garch_pred.png')
     print('fig saved')
     
-    np.savetxt(fname='../data/predicted_x.txt',fmt='%.5f', X=X, delimiter=',')
-    #np.savetxt(fname='../data/observed_states2.txt',fmt='%.5f', X=Y, delimiter=',')
-    print('data saved')
-
     plt.show()
     
 

@@ -33,10 +33,10 @@ def main():
     sigma_ = [sigma]
     nu = 1
     nu_ = [nu]
-    alpha = 2
-    beta = 1
-    p = 2
-    q = 2
+    alpha = 0.7
+    beta = 0.4
+    p = 1
+    q = 0
 
     for i in range(T-1):
         Q = np.mat([[sigma, 0], [0, 0]])
@@ -45,18 +45,23 @@ def main():
         X.append(x)
         y = H @ x + np.random.normal(0, R)
         Y.append(y)
-        nu = np.random.normal(0, 1, )
+        nu = np.random.normal(0, 2)
+        sigma = sigma + np.random.normal(0, 1)
         nu_.append(nu)
         sigma_.append(sigma)
-        if i >= p and i >= q:
-                ar = 0
-                ma = 0
-                for j in range(1, p):
-                    ar += alpha * math.log(sigma_[-j])
-                for k in range(1, q):
-                    ma += beta * math.log((nu_[-k])**2) 
-                s = math.log(sigma**2) + ar + ma
-                sigma = np.exp(s)
+        # sigma_.append(sigma)
+        # if i >= p and i >= q:
+        #         ar = 0
+        #         ma = 0
+        #         for j in range(1, p):
+        #             ar += alpha * np.log(sigma_[-j])
+        #         for k in range(1, q):
+        #             ma += beta * np.log((nu_[-k])**2) 
+        #         s = np.log(sigma_[0]) + ar + ma
+        #         sigma = np.exp(s)
+        # sigma = (sigma_[0]*(sigma_[-1])**alpha*(nu_[-1])**beta)
+        
+        
     
 
     plt.subplot(3, 1, 1)
