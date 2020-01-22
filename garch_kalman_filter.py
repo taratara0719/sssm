@@ -8,37 +8,45 @@ sns.set(style='darkgrid')
 
 class kf_lse(object):
 
-    def __init__(self, phi1, phi2, p, q, alpha, beta, T):
+    def __init__(self, phi1, phi2, p, q, T):
         self.phi1 = phi1
         self.phi2 = phi2
         self.p = p
         self.q = q
         self.T = T
-        self.alpha = alpha
-        self.beta = beta
     
     #  初期値
     def init_initial(self, y):
-        self.x = np.mat([[0.2936214], [0.67226796]])
+        #  hiddenn observed parameter
+        # self.x = np.mat([[0.2936214], [0.67226796]])
+        self.x = np.mat([[0.3], [0.9]])
         self.P = np.zeros((2, 2))
         self.sigma = 1
-        self.sigma0 = 1
         self.Q = np.mat([[self.sigma, 0], [0, 0]])
         self.F = np.mat([[self.phi1, self.phi2], [1, 0]])
         self.H = np.mat([1, 0])
         self.R = 1
+
+        #  calculator
         self.a = 0
         self.b = 0
         self.c = 0
         self.d = 0
         self.e = 0
-        self.nu = 0
+        self.f = 0
+        self.g = 0
+        self.h = 0
+
+
+        self.nu = np.zeros((2, 1))
         self.K = 0
+        self.v = np.zeros((2, 1))
+        self.alpha = 0.4
+        self.beta = 0.5
     
 
-    #  最小二乗法
-    def lse(self, x):
-        
+    #  phi estimator
+    def lse_phi(self, x):
         self.a += x[-3]**2
         self.c += x[-1] * x[-2]
         self.b += x[-3]**2
@@ -51,90 +59,105 @@ class kf_lse(object):
 
         return self
 
-    #  カルマンフィルター
+    #  q = 1 beta estimator
+    def lse_beta(self, sigma_, v):
+        self.f += sigma_[0]*(v[-2])
+        self.g += sigma_[-1]*(v[-2])
+        self.h += v[-2]
+        if len(v) >= 1:
+            self.beta = (self.f + self.g) / self.h**2
+                
+        return self    
+
+    def lse_alpha(self, sigma_):
+        self.f += sigma_[0]*sigma_[-2]
+        self.g += sigma_[-1]*sigma_[-2]
+        self.h += sigma_[-2]
+        if len(sigma_) >= 1:
+            self.alpha = (self.f + self.g) / self.h**2
+                
+        return self    
+        
+            
+
+    #  kalman filter
     def kf(self, y):
         self.init_initial(y)
 
         self.X = [self.x]
         self.phi1_ = [self.phi1]
         self.phi2_ = [self.phi2]
+        self.alpha_ = [self.alpha]
+        self.beta_ = [self.beta]
         self.K_ = [self.K]
         self.sigma_ = [self.sigma]
         self.nu_ = [self.nu]
         self.Q_ = [self.Q]
+        self.v_ = [self.v]
+        x_true = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
         
-        for i in tqdm(range(self.T-1)):
+        for self.i in tqdm(range(self.T-1)):
             # prediction
             x_ = self.F @ self.x
             P_ = self.Q + self.F @ self.P @ self.F.T
             
             #filtering
-            yi = y[i+1] - self.H @ x_
+            yi = y[self.i+1] - self.H @ x_
             S = self.H @ P_ @ self.H.T + self.R
             self.K = P_ @ self.H.T / S
             self.x = x_ + self.K * yi
             self.P = P_ - self.K * self.H @ P_
-            self.nu = self.Q - self.Q * self.H.T /S * self.H * self.Q  + self.K * yi * yi * self.K.T
+            
+            #　残差
+            #  厳密解
+            # self.nu = self.Q - self.Q * self.H.T / S * self.H * self.Q  + self.K * yi * yi * self.K.T
+            #  approximation
+            # self.nu = np.power(self.K * yi, 2)
+            #  真値を用いる
+            self.nu = np.abs(x_true[self.i] - self.x[0])
 
             self.K_.append(self.K)
             self.Q_.append(self.Q)
-            self.nu_.append(self.nu)
+            self.nu_.append(self.nu[0, 0])
 
             #  sigma filtering
-            if i >= self.p and i >= self.q:
-                ar = 0
-                ma = 0
-                for j in range(1, self.p):
-                    ar += self.alpha * np.log(self.sigma_[-j])
-                for k in range(1, self.q):
-                    ma += self.beta * np.log(self.nu_[-k]) 
-                s = np.log(self.sigma_[0]) + ar + ma
-                self.sigma = np.exp(s)
-            self.sigma_.append(self.sigma)
-            
+            if self.i >= self.p and self.i >= self.q:
+                self.ar = 0
+                self.ma = 0
+                for j in range(1, self.p+1):
+                    self.ar += self.alpha * self.sigma_[-j]
+                for k in range(1, self.q+1):
+                    self.ma += self.beta * self.nu_[-k]
+                self.sigma = self.sigma_[0] + self.ar + self.ma
+                
             #  phi iteration
             self.X.append(self.x)
+            self.sigma_.append(self.sigma)
             n, m = np.array(np.concatenate(self.X,axis=1))
-            if i >= 1:
-                self.lse(n)
+            
+            if self.i >= 1:
+                self.lse_phi(n)
+                self.lse_alpha(self.sigma_)
+                # self.lse_beta(self.sigma_, self.nu_)
             self.phi1_.append(self.phi1)
             self.phi2_.append(self.phi2)
-            
+            self.alpha_.append(self.alpha)
+            self.beta_.append(self.beta)
+            self.Q = np.mat([[self.sigma, 0], [0, 0]])
         return self
     
 
 def main():
 
-    x = np.genfromtxt(fname='../data/hidden_states2.txt', delimiter=',')
-    y = np.genfromtxt(fname='../data/observed_states2.txt')
-    Y = y.reshape(len(y), 1)
+    x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
+    y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
+    sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
     
-    x0 = np.zeros((2, 1))
-    P0 = np.zeros((2, 2))
+    pred = kf_lse(0.5, 0.1, 1, 0, len(x)).kf(y)
+    print(pred.beta_[-1])
+    print(pred.phi1_[-1])
+    print(pred.phi2_[-1])
 
-    T = 256
-    r = 1  # number of source components
-
-    np.random.seed(0)
-    #  system model
-    #  AR(2)model parameter
-    phi1 = np.random.normal(0, 0.3)
-    phi2 = np.random.normal(0, 0.3)
-    F = np.mat([[phi1, phi2], [1, 0]])  
-    sigma0 = 0.5
-    
-    #  observation model
-    c = 1
-    H = np.mat([c, 0])
-    R = np.mat([[0.4, 0], [0, 0]])
-
-    p = 0
-    q = 2
-    alpha = 0
-    beta = 0.5
-
-    pred = kf_lse(0.529, 0.120, 0, 2, 0, 0.5, len(x)).kf(y)
-    
     
     plt.subplot(4, 1, 1)
     a, b = np.array(np.concatenate(pred.X,axis=1))
@@ -159,10 +182,12 @@ def main():
     plt.xlabel('time')
     plt.legend()
 
-    # plt.subplot(4, 1, 4)
-    # plt.plot(pred.sigma_, label='sigma')
-    # plt.xlabel('time')
-    # plt.legend()
+    plt.subplot(4, 1, 4)
+    plt.plot(pred.sigma_, label='pred')
+    plt.plot(sigma, label='true')
+    plt.title("sigma")
+    plt.xlabel('time')
+    plt.legend()
 
     plt.savefig('../fig/garch_pred.png')
     print('fig saved')

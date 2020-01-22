@@ -24,19 +24,14 @@ def main():
     R = 1
 
     #  test data generating
-    T = 200  # number of sampling
+    T = 100  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     y = 0
     
     X = [x]
     Y = [y]
     sigma_ = [sigma]
-    nu = 1
-    nu_ = [nu]
-    alpha = 0.7
-    beta = 0.4
-    p = 1
-    q = 0
+    beta = 0.7
 
     for i in range(T-1):
         Q = np.mat([[sigma, 0], [0, 0]])
@@ -45,21 +40,10 @@ def main():
         X.append(x)
         y = H @ x + np.random.normal(0, R)
         Y.append(y)
-        nu = np.random.normal(0, 2)
-        sigma = sigma + np.random.normal(0, 1)
-        nu_.append(nu)
+        nu = np.random.normal(0, 0.3)
+        sigma = sigma_[-1]  + beta * nu
+        # sigma = np.sqrt(sigma2)
         sigma_.append(sigma)
-        # sigma_.append(sigma)
-        # if i >= p and i >= q:
-        #         ar = 0
-        #         ma = 0
-        #         for j in range(1, p):
-        #             ar += alpha * np.log(sigma_[-j])
-        #         for k in range(1, q):
-        #             ma += beta * np.log((nu_[-k])**2) 
-        #         s = np.log(sigma_[0]) + ar + ma
-        #         sigma = np.exp(s)
-        # sigma = (sigma_[0]*(sigma_[-1])**alpha*(nu_[-1])**beta)
         
         
     
@@ -86,6 +70,7 @@ def main():
     
     np.savetxt(fname='../data/garch_hid_states.txt',fmt='%.5f', X=X, delimiter=',')
     np.savetxt(fname='../data/garch_obs_states.txt',fmt='%.5f', X=Y, delimiter=',')
+    np.savetxt(fname='../data/garch_sigma.txt',fmt='%.5f', X=sigma_, delimiter=',')
     print('data saved')
 
     plt.show()
