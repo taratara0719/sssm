@@ -8,11 +8,9 @@ sns.set(style='darkgrid')
 
 class kf_lse(object):
 
-    def __init__(self, phi1, phi2, p, q, T):
+    def __init__(self, phi1, phi2, T):
         self.phi1 = phi1
         self.phi2 = phi2
-        self.p = p
-        self.q = q
         self.T = T
     
     #  初期値
@@ -59,15 +57,6 @@ class kf_lse(object):
 
         return self
 
-    #  q = 1 beta estimator
-    def lse_beta(self, sigma_, v):
-        self.f += sigma_[0]*(v[-2])
-        self.g += sigma_[-1]*(v[-2])
-        self.h += v[-2]
-        if len(v) >= 1:
-            self.beta = (self.f + self.g) / self.h**2
-                
-        return self    
 
     def lse_alpha(self, sigma_):
         self.f += sigma_[0]*sigma_[-2]
@@ -120,15 +109,6 @@ class kf_lse(object):
             self.Q_.append(self.Q)
             self.nu_.append(self.nu[0, 0])
 
-            #  sigma filtering
-            if self.i >= self.p and self.i >= self.q:
-                self.ar = 0
-                self.ma = 0
-                for j in range(1, self.p+1):
-                    self.ar += self.alpha * self.sigma_[-j]
-                for k in range(1, self.q+1):
-                    self.ma += self.beta * self.nu_[-k]
-                self.sigma = self.sigma_[0] + self.ar + self.ma
                 
             #  phi iteration
             self.X.append(self.x)
@@ -138,12 +118,12 @@ class kf_lse(object):
             if self.i >= 1:
                 self.lse_phi(n)
                 self.lse_alpha(self.sigma_)
-                # self.lse_beta(self.sigma_, self.nu_)
+    
             self.phi1_.append(self.phi1)
             self.phi2_.append(self.phi2)
             self.alpha_.append(self.alpha)
             self.beta_.append(self.beta)
-            self.Q = np.mat([[self.sigma, 0], [0, 0]])
+            
         return self
     
 
@@ -153,7 +133,7 @@ def main():
     y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
     sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
     
-    pred = kf_lse(0.5, 0.1, 1, 0, len(x)).kf(y)
+    pred = kf_lse(0.5, 0.1, len(x)).kf(y)
     print(pred.sigma_[-1])
     print(pred.phi1_[-1])
     print(pred.phi2_[-1])

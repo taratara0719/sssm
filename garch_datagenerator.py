@@ -14,13 +14,13 @@ def main():
     #  AR(2)model parameter
     phi1 = np.random.normal(0, 0.3)
     phi2 = np.random.normal(0, 0.3)
-    sigma = 1
+    sigma = 2
     F = np.mat([[phi1, phi2], [1, 0]])
     Q = np.mat([[sigma, 0], [0, 0]])
+    eta = np.zeros((3, 1))
 
     #  observation model
-    c = 1
-    H = np.mat([c, 0])
+    H = np.mat([1, 0])
     R = 1
 
     #  test data generating
@@ -31,21 +31,23 @@ def main():
     X = [x]
     Y = [y]
     sigma_ = [sigma]
-    beta = 0.7
+    a = 0.8
 
     for i in range(T-1):
+        nu = np.random.normal(0, 0.3)
+        sigma2 = a * np.log(sigma_[-1]) + nu
+        sigma = np.exp(sigma2)
+        sigma_.append(sigma)
+
         Q = np.mat([[sigma, 0], [0, 0]])
-        x = F @ x + np.random.multivariate_normal([0, 0], Q, 1).T
-        #x_ = np.hstack((X, x))
+        # eta[0:2, :] = np.random.multivariate_normal([0,0], Q, 1).T
+        # eta[2, :] = np.random.normal(0, 1)
+        # x = F @ x + eta
+        x = F @ x + np.random.multivariate_normal([0,0], Q, 1).T
         X.append(x)
+
         y = H @ x + np.random.normal(0, R)
         Y.append(y)
-        nu = np.random.normal(0, 0.3)
-        sigma = sigma_[-1]  + beta * nu
-        # sigma = np.sqrt(sigma2)
-        sigma_.append(sigma)
-        
-        
     
 
     plt.subplot(3, 1, 1)
