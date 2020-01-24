@@ -14,46 +14,46 @@ def main():
     #  AR(2)model parameter
     phi1 = np.random.normal(0, 0.3)
     phi2 = np.random.normal(0, 0.3)
-    sigma = 2
-    F = np.mat([[phi1, phi2], [1, 0]])
-    Q = np.mat([[sigma, 0], [0, 0]])
-    eta = np.zeros((3, 1))
+    sigma = 1
+    a = 0.7
+    F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
+    Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
 
     #  observation model
-    H = np.mat([1, 0])
+    H = np.mat([1, 0, 0])
     R = 1
 
     #  test data generating
     T = 100  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
+    z = np.mat([sigma])
+    x_ = np.vstack([x, z])
     y = 0
     
-    X = [x]
+    X = [x_]
     Y = [y]
     sigma_ = [sigma]
-    a = 0.8
-
-    for i in range(T-1):
-        nu = np.random.normal(0, 0.3)
-        sigma2 = a * np.log(sigma_[-1]) + nu
-        sigma = np.exp(sigma2)
-        sigma_.append(sigma)
-
-        Q = np.mat([[sigma, 0], [0, 0]])
-        # eta[0:2, :] = np.random.multivariate_normal([0,0], Q, 1).T
-        # eta[2, :] = np.random.normal(0, 1)
-        # x = F @ x + eta
-        x = F @ x + np.random.multivariate_normal([0,0], Q, 1).T
-        X.append(x)
-
-        y = H @ x + np.random.normal(0, R)
-        Y.append(y)
     
 
+    for i in range(T-1):
+        z_t = np.log(sigma_[-1])
+        x_[-1, 0] = z_t
+        x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
+        
+        sigma = np.exp(x_[-1, 0])
+        sigma_.append(sigma)
+        Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
+        # x = F @ x + np.random.multivariate_normal([0,0], Q, 1).T
+        X.append(x_)
+
+        y = H @ x_ + np.random.normal(0, R)
+        Y.append(y)
+    
+    print(z_t)
     plt.subplot(3, 1, 1)
     #for i in range(r):
         #plt.plot(x[:,i], label='x{}'.format(i+1))
-    a, b = np.array(np.concatenate(X, axis=1))
+    a, b, c = np.array(np.concatenate(X, axis=1))
     plt.plot(a, label='x')
     plt.legend()
     
