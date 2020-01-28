@@ -15,7 +15,7 @@ def main():
     phi1 = np.random.normal(0, 0.3)
     phi2 = np.random.normal(0, 0.3)
     sigma = 1
-    a = 0.7
+    a = 0.6
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
     Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
 
@@ -48,7 +48,7 @@ def main():
 
         y = H @ x_ + np.random.normal(0, R)
         Y.append(y)
-    
+    print(x_[:, 0])
     print(z_t)
     plt.subplot(3, 1, 1)
     #for i in range(r):

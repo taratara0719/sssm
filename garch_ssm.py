@@ -18,12 +18,12 @@ class kf_lse(object):
     def init_initial(self, y):
         #  hiddenn observed parameter
         # self.x = np.mat([[0.2936214], [0.67226796]])
-        self.x = np.mat([[0.3], [0.9], [1]])
-        self.P = np.random.normal(0, 1, (3, 3))
         self.sigma = 1
+        self.x = np.mat([[0.8], [0.2], [0.2]])
+        self.P = np.zeros((3, 3))
         self.Q = np.mat([[self.sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
         self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
-        self.H = np.mat([1, 0, 1])
+        self.H = np.mat([1, 0, 0])
         self.R = 1
 
         #  calculator
@@ -65,9 +65,9 @@ class kf_lse(object):
         self.alpha_ = [self.alpha]
         self.sigma_ = [self.sigma]
 
-        self.sigma = np.exp(self.x[-1, 0])
-        self.sigma_.append(self.sigma)
-        self.Q = np.mat([[self.sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
+        # self.sigma = np.exp(self.x[-1, 0])
+        # self.sigma_.append(self.sigma)
+        # self.Q = np.mat([[self.sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
 
         for self.i in tqdm(range(self.T-1)):
             # prediction
@@ -106,12 +106,11 @@ def main():
     sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
     
     np.random.seed(0)
-    pred = kf_lse(0.5, 0.1, 0.7, len(x)).kf(y)
+    pred = kf_lse(0.5, 0.1, 0.6, len(x)).kf(y)
     print(pred.alpha_[-1])
     print(pred.phi1_[-1])
     print(pred.phi2_[-1])
-    print(len(pred.sigma_))
-    print(len(pred.X))
+    
 
     
     plt.subplot(4, 1, 1)

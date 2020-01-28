@@ -61,9 +61,9 @@ class kf_lse(object):
 
     #  q = 1 beta estimator
     def lse_beta(self, sigma_, v):
-        self.f += sigma_[0]*(v[-2])
-        self.g += sigma_[-1]*(v[-2])
-        self.h += v[-2]
+        self.f += np.log(sigma_[0])*np.log(v[-2])
+        self.g += np.log(sigma_[-1])*np.log(v[-2])
+        self.h += np.log(v[-2])
         if len(v) >= 1:
             self.beta = (self.f + self.g) / self.h**2
                 
@@ -73,8 +73,7 @@ class kf_lse(object):
         self.f += sigma_[0]*sigma_[-2]
         self.g += sigma_[-1]*sigma_[-2]
         self.h += sigma_[-2]
-        if len(sigma_) >= 1:
-            self.alpha = (self.f + self.g) / self.h**2
+        self.alpha = (self.f + self.g) / self.h**2
                 
         return self    
         
@@ -94,8 +93,7 @@ class kf_lse(object):
         self.nu_ = [self.nu]
         self.Q_ = [self.Q]
         self.v_ = [self.v]
-        x_true = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
-        
+
         for self.i in tqdm(range(self.T-1)):
             # prediction
             x_ = self.F @ self.x
@@ -110,11 +108,11 @@ class kf_lse(object):
             
             #　残差
             #  厳密解
-            # self.nu = self.Q - self.Q * self.H.T / S * self.H * self.Q  + self.K * yi * yi * self.K.T
+            self.nu = self.Q - self.Q * self.H.T / S * self.H * self.Q  + self.K * yi * yi * self.K.T
             #  approximation
             # self.nu = np.power(self.K * yi, 2)
             #  真値を用いる
-            self.nu = np.abs(x_true[self.i] - self.x[0])
+            # self.nu = np.abs(x_true[self.i] - self.x[0])
 
             self.K_.append(self.K)
             self.Q_.append(self.Q)
@@ -125,10 +123,11 @@ class kf_lse(object):
                 self.ar = 0
                 self.ma = 0
                 for j in range(1, self.p+1):
-                    self.ar += self.alpha * self.sigma_[-j]
+                    self.ar += self.alpha * np.log(self.sigma_[-j])
                 for k in range(1, self.q+1):
-                    self.ma += self.beta * self.nu_[-k]
-                self.sigma = self.sigma_[0] + self.ar + self.ma
+                    self.ma += self.beta * np.log(self.nu_[-k])
+                log_sigma =  np.log(self.sigma) + self.ar + self.ma
+                self.sigma = np.exp(log_sigma)
                 
             #  phi iteration
             self.X.append(self.x)
@@ -137,8 +136,8 @@ class kf_lse(object):
             
             if self.i >= 1:
                 self.lse_phi(n)
-                self.lse_alpha(self.sigma_)
-                # self.lse_beta(self.sigma_, self.nu_)
+                # self.lse_alpha(self.sigma_)
+                self.lse_beta(self.sigma_, self.nu_)
             self.phi1_.append(self.phi1)
             self.phi2_.append(self.phi2)
             self.alpha_.append(self.alpha)
@@ -153,7 +152,7 @@ def main():
     y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
     sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
     
-    pred = kf_lse(0.5, 0.1, 1, 0, len(x)).kf(y)
+    pred = kf_lse(0.5, 0.1, 0, 1, len(x)).kf(y)
     print(pred.sigma_[-1])
     print(pred.phi1_[-1])
     print(pred.phi2_[-1])
