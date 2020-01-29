@@ -26,7 +26,7 @@ def main():
     #  test data generating
     T = 100  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
-    z = np.mat([sigma])
+    z = np.mat([1])
     x_ = np.vstack([x, z])
     y = 0
     
@@ -48,8 +48,7 @@ def main():
 
         y = H @ x_ + np.random.normal(0, R)
         Y.append(y)
-    print(x_[:, 0])
-    print(z_t)
+
     plt.subplot(3, 1, 1)
     #for i in range(r):
         #plt.plot(x[:,i], label='x{}'.format(i+1))
