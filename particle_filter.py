@@ -55,7 +55,8 @@ class ParticleFilter(object):
         self.sigma = 1
         a = 0.6
         F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
-        Q = np.mat([[self.sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
+        self.Q = np.mat([[self.sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
+        self.sigma_ = [self.sigma]
 
         #  observation model
         H = np.mat([1, 0, 0])
@@ -70,9 +71,11 @@ class ParticleFilter(object):
         x_resampled[:, 0, :] = initial_x
         x[:, 0, :] = initial_x
 
+        y_pred = np.zeros((T+1, self.n_particle))
+
         # 重み
-        w        = np.zeros((3, T, self.n_particle))
-        w_normed = np.zeros((3, T, self.n_particle))
+        w        = np.zeros((T, self.n_particle))
+        w_normed = np.zeros((T, self.n_particle))
 
         l = np.zeros(T) # 時刻毎の尤度
 
@@ -80,16 +83,19 @@ class ParticleFilter(object):
             print("\r calculating... t={}".format(t), end="")
             for i in range(self.n_particle):
                 # AR(2)モデルを適用
-                v = np.random.multivariate_normal([0,0], Q, 1) # System Noise　#--- (2)
-                x[:, t+1, i] = F * x_resampled[:, t, i] + v # システムノイズの付加
-                w[:, t, i] = self.norm_likelihood(self.y[t], x[:, t+1, i], self.sigma) # y[t]に対する各粒子の尤度
+                v = np.random.multivariate_normal([0,0,0], self.Q, 1) # System Noise　#--- (2)
+                x[:, t+1, i] = F @ x_resampled[:, t, i] + v # システムノイズの付加
+                y_pred[t+1, i] = H @ x[:, t+1, i] 
+                w[t, i] = self.norm_likelihood(self.y[t], y_pred[t+1, i], self.sigma) # y[t]に対する各粒子の尤度
             w_normed[t] = w[t]/np.sum(w[t]) # 規格化
             l[t] = np.log(np.sum(w[t])) # 各時刻対数尤度
 
             # Resampling
             #k = self.resampling(w_normed[t]) # リリサンプリングで取得した粒子の添字
             k = self.resampling2(w_normed[t]) # リリサンプリングで取得した粒子の添字（層化サンプリング）
-            x_resampled[:, t+1, i] = x[:, t+1, k]
+            x_resampled[:, t+1] = x[:, t+1, k]
+            self.sigma = np.exp(np.sum(x[2, t+1, :] / self.n_particle))
+            self.sigma_.append(self.sigma)
 
         # 全体の対数尤度
         self.log_likelihood = np.sum(l) - T*np.log(self.n_particle)
@@ -100,29 +106,44 @@ class ParticleFilter(object):
         self.w_normed = w_normed
         self.l = l
 
-    def get_filtered_value(self):
+    def get_filtered_value(self, a):
         """
         尤度の重みで加重平均した値でフィルタリングされ値を算出
         """
-        return np.diag(np.dot(self.w_normed, self.x[1:].T))
+        return np.diag(np.dot(self.w_normed, self.x[a, 1:].T))
 
     def draw_graph(self):
         # グラフ描画
         T = len(self.y)
+        true_x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
 
-        plt.figure(figsize=(16,8))
-        plt.plot(range(T), self.y)
-        plt.plot(self.get_filtered_value(), "g")
+        plt.subplot(2, 1, 1)
+        # plt.figure(figsize=(16,8))
+        # plt.plot(range(T), self.y)
+        plt.plot(true_x[:, 0], label='true')
+        plt.plot(self.get_filtered_value(0), label='x_pred')
 
         for t in range(T):
-            plt.scatter(np.ones(self.n_particle)*t, self.x[t], color="r", s=2, alpha=0.1)
+            plt.scatter(np.ones(self.n_particle)*t, self.x[0, t], color="r", s=2, alpha=0.1)
 
         plt.title("log likelihood={0:.3f}".format( self.log_likelihood))
+        plt.legend()
+
+        plt.subplot(2, 1, 2)
+        plt.plot(range(T), self.sigma_[1:], label='sigma_pred')
+        # plt.plot(self.get_filtered_value(2),label='sigma_pred')
+        # plt.plot(true_x[:, 2], label='true')
+        sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
+        plt.plot(sigma, label='true')
+        plt.legend()
+
+        plt.savefig('../fig/particle_ar2_pred.png')
+        print('fig saved')
         plt.show()
 
 x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
 y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
 
-pf = ParticleFilter(y, 10)
+pf = ParticleFilter(y, 100)
 pf.simulate()
 pf.draw_graph()
