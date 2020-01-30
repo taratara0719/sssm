@@ -9,40 +9,41 @@ sns.set(style='darkgrid')
 def main():
     r = 1  # number of source components
 
-    np.random.seed(0)
+    np.random.seed(4)
     #  system model
     #  AR(2)model parameter
-    phi1 = np.random.normal(0, 0.3)
-    phi2 = np.random.normal(0, 0.3)
-    sigma = 1
-    a = 0.6
+    phi1 = 0.529
+    phi2 = 0.120
+    
+    sigma = np.exp(-2)
+    a = 1
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
-    Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
+    Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.01]])
 
     #  observation model
     H = np.mat([1, 0, 0])
-    R = 1
+    R = 0.1
 
     #  test data generating
-    T = 100  # number of sampling
+    T = 200  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
-    z = np.mat([1])
+    z = np.mat([-2])
     x_ = np.vstack([x, z])
     y = 0
-    
+    print(x_[-1, 0])
     X = [x_]
     Y = [y]
     sigma_ = [sigma]
     
 
     for i in range(T-1):
-        z_t = np.log(sigma_[-1])
-        x_[-1, 0] = z_t
+        # z_t = np.log(sigma_[-1])
+        # x_[-1, 0] = z_t
         x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
         
         sigma = np.exp(x_[-1, 0])
         sigma_.append(sigma)
-        Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.1]])
+        Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.01]])
         # x = F @ x + np.random.multivariate_normal([0,0], Q, 1).T
         X.append(x_)
 
@@ -68,7 +69,7 @@ def main():
 
     plt.savefig('../fig/garch_states.png')
     print('fig saved')
-    
+    print(X[0])
     np.savetxt(fname='../data/garch_hid_states.txt',fmt='%.5f', X=X, delimiter=',')
     np.savetxt(fname='../data/garch_obs_states.txt',fmt='%.5f', X=Y, delimiter=',')
     np.savetxt(fname='../data/garch_sigma.txt',fmt='%.5f', X=sigma_, delimiter=',')
