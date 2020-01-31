@@ -137,8 +137,9 @@ class ParticleFilter(object):
         plt.legend()
 
         plt.subplot(2, 1, 2)
-        # plt.plot(self.sigma_[1:], label='sigma_pred')
         plt.plot(self.get_filtered_value(2),label='sigma_pred')
+        # plt.plot(np.exp(self.get_filtered_value(2)),label='sigma_pred')
+        
         plt.plot(true_x[:, 2], label='true')
         # true_sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
         # plt.plot(true_sigma, label='true')
@@ -153,6 +154,6 @@ class ParticleFilter(object):
 x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
 y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
 
-pf = ParticleFilter(y, 100)
+pf = ParticleFilter(y, 1000)
 pf.simulate()
 pf.draw_graph()
