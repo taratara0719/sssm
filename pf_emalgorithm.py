@@ -42,6 +42,40 @@ class ParticleFilter(object):
         k = np.asanyarray([self.F_inv(w_cumsum, idx, val) for val in u])
         return k
 
+
+    #  calculator
+    def init_initial(self):
+        self.phi1_ = [self.phi1]
+        self.phi2_ = [self.phi2]
+        self.alpha_ = [self.alpha]
+
+        self.a = 0
+        self.b = 0
+        self.c = 0
+        self.d = 0
+        self.e = 0
+        self.f = 0
+        self.g = 0
+        self.h = 0
+        
+
+    #  phi estimator
+    def lse_phi(self, x, x2, log_sigma, log_sigma2):
+        self.a += x2[-3]
+        self.c += x[-1] * x[-2]
+        self.b += x2[-3]
+        self.d += x[-1] * x[-2]
+        self.e += x[-1] * x[-3]
+        self.f += log_sigma[-1]*log_sigma[-2]
+        self.g += log_sigma2[-2]
+        if len(x) >= 3:
+            self.phi1 = (self.b * self.c - self.d * self.e) / (self.a * self.b - self.d**2)
+            self.phi2 = (self.a * self.e - self.c * self.d) / (self.a * self.b - self.d**2)
+            self.alpha = self.f / self.g
+            self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
+
+        return self
+
     
     def simulate(self, seed=71):
         np.random.seed(seed)
@@ -51,13 +85,15 @@ class ParticleFilter(object):
 
         #  system model
         #  AR(2)model parameter
-        phi1 = 0.529
-        phi2 = 0.120
+        self.phi1 = 0.529
+        self.phi2 = 0.120
         self.sigma = [np.exp(-2)]*self.n_particle
-        a = 1
-        F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
+        self.alpha = 1
+        self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
         self.sigma_ = [self.sigma]
 
+        self.init_initial()
+        
         #  observation model
         H = np.mat([1, 0, 0])
         R = 0.1
@@ -73,8 +109,16 @@ class ParticleFilter(object):
         initial_x = np.zeros((3, self.n_particle)).T + true_x[0]
         x_resampled[:, 0, :] = initial_x.T
         x[:, 0, :] = initial_x.T
-        
-        
+        x_mean = 0
+        x2_mean = 0
+        sigma_mean = 0
+        sigma2_mean = 0
+
+        x_mean_ = [x_mean]
+        x2_mean_ = [x2_mean]
+        sigma_mean_ = [sigma_mean]
+        sigma2_mean_ = [sigma2_mean]
+
         y_pred = np.zeros((T+1, self.n_particle))
 
         # 重み
@@ -87,13 +131,12 @@ class ParticleFilter(object):
             print("\r calculating... t={}".format(t), end="")
             for i in range(self.n_particle):
                 # AR(2)モデルを適用
-                self.Q = np.mat([[self.sigma[i], 0, 0], [0, 0, 0], [0, 0, 0.05]])
+                self.Q = np.mat([[self.sigma[i], 0, 0], [0, 0, 0], [0, 0, 0.01]])
                 v = np.random.multivariate_normal([0,0,0], self.Q, 1) # System Noise　#--- (2)
-                x[:, t+1, i] = F @ x_resampled[:, t, i] + v # システムノイズの付加
+                x[:, t+1, i] = self.F @ x_resampled[:, t, i] + v # システムノイズの付加
                 y_pred[t+1, i] = H @ x[:, t+1, i] 
                 w[t, i] = self.norm_likelihood(self.y[t], y_pred[t+1, i], R) # y[t]に対する各粒子の尤度
                 
-                # TODO: yの時刻合わせる
             w_normed[t] = w[t]/np.sum(w[t]) # 規格化
             l[t] = np.log(np.sum(w[t])) # 各時刻対数尤度
             # Resampling
@@ -102,6 +145,25 @@ class ParticleFilter(object):
             x_resampled[:, t+1] = x[:, t+1, k]
             self.sigma = np.exp(x_resampled[2, t+1, :])
             self.sigma_.append(self.sigma)
+
+            x_mean = np.mean(x_resampled[0, t+1, :])
+            x2_mean = np.mean(x_resampled[0, t+1, :]**2)
+            sigma_mean = np.mean(x_resampled[2, t+1, :])
+            sigma2_mean = np.mean(x_resampled[2, t+1, :]**2)
+
+            x_mean_.append(x_mean)
+            x2_mean_.append(x2_mean)
+            sigma_mean_.append(sigma_mean)
+            sigma2_mean_.append(sigma2_mean)
+
+            if t >= 1:
+                self.lse_phi(x_mean_, x2_mean_, sigma_mean_, sigma2_mean_)
+            self.phi1_.append(self.phi1)
+            self.phi2_.append(self.phi2)
+            self.alpha_.append(self.alpha)
+
+
+
 
         # 全体の対数尤度
         self.log_likelihood = np.sum(l) - T*np.log(self.n_particle)
@@ -118,7 +180,7 @@ class ParticleFilter(object):
         """
         return np.diag(np.dot(self.w_normed, self.x[a, 1:].T))
 
-    def draw_graph(self):
+    def hid_draw_graph(self):
         # グラフ描画
         T = len(self.y)
         true_x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
@@ -151,9 +213,33 @@ class ParticleFilter(object):
         print('fig saved')
         plt.show()
 
+    def para_draw_graph(self):
+        T = len(self.y)
+
+        plt.subplot(3, 1, 1)
+        plt.plot(self.phi1_, label='estimate')
+        plt.hlines(y = 0.529, xmin = 0, xmax = len(self.y), label = 'true', color='orange')
+        plt.title("phi1")
+        plt.legend()
+
+        plt.subplot(3, 1, 2)
+        plt.plot(self.phi2_, label='estimate')
+        plt.hlines(y = 0.120, xmin = 0, xmax = len(self.y), label = 'true', color='orange')
+        plt.title("phi2")
+        plt.legend()
+
+        plt.subplot(3, 1, 3)
+        plt.plot(self.alpha_, label='estimate')
+        plt.hlines(y = 1, xmin = 0, xmax = len(self.y), label = 'true', color='orange')
+        plt.title("alpha")
+        plt.legend()
+
+        plt.show()
+
 x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
 y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
 
-pf = ParticleFilter(y, 10000)
+pf = ParticleFilter(y, 50000)
 pf.simulate()
-pf.draw_graph()
+pf.hid_draw_graph()
+pf.para_draw_graph()

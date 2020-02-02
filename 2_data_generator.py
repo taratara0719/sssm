@@ -24,7 +24,7 @@ def main():
     R = 1
 
     #  test data generating
-    T = 100  # number of sampling
+    T = 5000  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     y = 0
     

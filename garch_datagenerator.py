@@ -9,16 +9,17 @@ sns.set(style='darkgrid')
 def main():
     r = 1  # number of source components
 
-    np.random.seed(10)
+    np.random.seed(15)
     #  system model
     #  AR(2)model parameter
     phi1 = 0.529
     phi2 = 0.120
     
-    sigma = 10
+    sigma = np.exp(-2)
     a = 1
+    b = 0.01
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
-    Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.01]])
+    Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
 
     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
 
@@ -29,7 +30,7 @@ def main():
     R = 0.1
 
     #  test data generating
-    T = 500  # number of sampling
+    T = 1000  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     z = np.mat([np.log(sigma)])
     x_ = np.vstack([x, z])
@@ -42,34 +43,34 @@ def main():
 
     for i in range(T-1):
         # 通常の分散不均一モデル
-        # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
-        # sigma = np.exp(x_[-1, 0])
-        # sigma_.append(sigma)
-        # Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0.01]])
-        # X.append(x_)
-        # y = H @ x_ + np.random.normal(0, R)
-        # Y.append(y)
+        x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
+        sigma = np.exp(x_[-1, 0])
+        sigma_.append(sigma)
+        Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
+        X.append(x_)
+        y = H @ x_ + np.random.normal(0, R)
+        Y.append(y)
 
         # 分散切り替え用モデル
-        if i<= T/2:
-            sigma = 10
-            x[-1, 0] = np.log(sigma)
-            Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-            x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
-            x[-1, 0] = np.log(sigma)
-            X.append(x_)
-            y = H @ x_ + np.random.normal(0, R)
-            Y.append(y)
-            sigma_.append(sigma)
-        else:
-            sigma = 1
-            Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-            x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
-            x_[-1, 0] = np.log(sigma)
-            X.append(x_)
-            y = H @ x_ + np.random.normal(0, R)
-            Y.append(y)
-            sigma_.append(sigma)
+        # if i<= T/2:
+        #     sigma = 10
+        #     x[-1, 0] = np.log(sigma)
+        #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
+        #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+        #     x[-1, 0] = np.log(sigma)
+        #     X.append(x_)
+        #     y = H @ x_ + np.random.normal(0, R)
+        #     Y.append(y)
+        #     sigma_.append(sigma)
+        # else:
+        #     sigma = 1
+        #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
+        #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+        #     x_[-1, 0] = np.log(sigma)
+        #     X.append(x_)
+        #     y = H @ x_ + np.random.normal(0, R)
+        #     Y.append(y)
+        #     sigma_.append(sigma)
 
 
 
