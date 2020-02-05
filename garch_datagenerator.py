@@ -9,15 +9,15 @@ sns.set(style='darkgrid')
 def main():
     r = 1  # number of source components
 
-    np.random.seed(15)
+    np.random.seed(20)
     #  system model
     #  AR(2)model parameter
     phi1 = 0.529
     phi2 = 0.120
     
-    sigma = np.exp(-2)
+    sigma = np.exp(0.5)
     a = 1
-    b = 0.01
+    b = 0.001
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
     Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
 
@@ -30,7 +30,7 @@ def main():
     R = 0.1
 
     #  test data generating
-    T = 1000  # number of sampling
+    T = 5000  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     z = np.mat([np.log(sigma)])
     x_ = np.vstack([x, z])
@@ -53,7 +53,6 @@ def main():
 
         # 分散切り替え用モデル
         # if i<= T/2:
-        #     sigma = 10
         #     x[-1, 0] = np.log(sigma)
         #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
         #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
@@ -63,7 +62,7 @@ def main():
         #     Y.append(y)
         #     sigma_.append(sigma)
         # else:
-        #     sigma = 1
+        #     sigma = np.exp(2)
         #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
         #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
         #     x_[-1, 0] = np.log(sigma)
@@ -71,6 +70,12 @@ def main():
         #     y = H @ x_ + np.random.normal(0, R)
         #     Y.append(y)
         #     sigma_.append(sigma)
+
+        # 分散一定
+        # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+        # X.append(x_)
+        # y = H @ x_ + np.random.normal(0, R)
+        # Y.append(y)
 
 
 
