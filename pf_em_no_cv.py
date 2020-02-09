@@ -42,8 +42,6 @@ class ParticleFilter(object):
         k = np.asanyarray([self.F_inv(w_cumsum, idx, val) for val in u])
         return k
 
-
-    #  calculator
     def init_initial(self):
         self.phi1_ = [self.phi1]
         self.phi2_ = [self.phi2]
@@ -57,10 +55,9 @@ class ParticleFilter(object):
         self.f = 0
         self.g = 0
         self.h = 0
-        
 
     #  phi estimator
-    def lse_phi(self, x, x2, log_sigma, log_sigma2):
+    def lse_phi(self, x, x2):
         self.a += x2[-3]
         self.c += x[-1] * x[-2]
         self.b += x2[-3]
@@ -68,19 +65,16 @@ class ParticleFilter(object):
         self.e += x[-1] * x[-3]
         # self.f += log_sigma[-1]*log_sigma[-2]
         # self.g += log_sigma2[-2]
+        self.h += (x[-1] - x[-2])**2
         if len(x) >= 3:
             self.phi1 = (self.b * self.c - self.d * self.e) / (self.a * self.b - self.d**2)
             self.phi2 = (self.a * self.e - self.c * self.d) / (self.a * self.b - self.d**2)
             # self.alpha = self.f / self.g
-            self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
+            self.sigma = self.h / (2 * len(x))
+            self.F = np.mat([[self.phi1, self.phi2], [1, 0]])
+            self.Q = np.mat([[self.sigma, 0], [0, 0]])
 
         return self
-
-    def get_filtered_value_em(self, w, x):
-        return np.dot(w, x.T)
-
-    def get_filtered_value_em_2(self, w, x):
-        return np.dot(w, (x**2).T)
 
     
     def simulate(self, seed=71):
@@ -88,44 +82,42 @@ class ParticleFilter(object):
 
         # 時系列データ数
         T = len(self.y)
-
+        
         #  system model
         #  AR(2)model parameter
         self.phi1 = 0.6
         self.phi2 = 0.2
-        self.sigma = np.exp(0) + np.random.normal(0, 0.01, self.n_particle)
+        self.sigma = np.exp(0.5)
+        self.log_sigma = 0.5
         self.alpha = 1
-        self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
-        self.sigma_ = [self.sigma]
+        self.F = np.mat([[self.phi1, self.phi2], [1, 0]])
+        self.Q = np.mat([[self.sigma, 0], [0, 0]])
+        self.log_sigma_ = [self.log_sigma]
 
         self.init_initial()
-        
+
         #  observation model
-        H = np.mat([1, 0, 0])
+        H = np.mat([1, 0])
         R = 0.1
 
         # 潜在変数
-        x = np.zeros((3, T+1, self.n_particle))
-        x_resampled = np.zeros((3, T+1, self.n_particle))
+        x = np.zeros((2, T+1, self.n_particle))
+        x_resampled = np.zeros((2, T+1, self.n_particle))
 
         # 潜在変数の初期値
         true_x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
         
         # initial_x =  np.random.normal(0, .01, size=(3,self.n_particle)).T + true_x[0]  #--- (1)
-        initial_x = np.random.normal(0, 0.01, (3, self.n_particle)).T + true_x[0]
+        initial_x = np.zeros((2, self.n_particle)).T + true_x[0, 0:1]
         x_resampled[:, 0, :] = initial_x.T
         x[:, 0, :] = initial_x.T
+
         self.x_mean = 0
         x2_mean = 0
-        sigma_mean = 0
-        sigma2_mean = 0
-
         self.x_mean_ = [self.x_mean]
         x2_mean_ = [x2_mean]
-        sigma_mean_ = [sigma_mean]
-        sigma2_mean_ = [sigma2_mean]
 
-        y_pre = np.zeros((T+1, self.n_particle))
+        y_pred = np.zeros((T+1, self.n_particle))
 
         # 重み
         w        = np.zeros((T, self.n_particle))
@@ -133,16 +125,14 @@ class ParticleFilter(object):
 
         l = np.zeros(T) # 時刻毎の尤度
 
-
         for t in range(T):
             print("\r calculating... t={}".format(t), end="")
             for i in range(self.n_particle):
                 # AR(2)モデルを適用
-                self.Q = np.mat([[self.sigma[i], 0, 0], [0, 0, 0], [0, 0, 0.01]])
-                v = np.random.multivariate_normal([0,0,0], self.Q, 1) # System Noise　#--- (2)
+                v = np.random.multivariate_normal([0,0], self.Q, 1) # System Noise　#--- (2)
                 x[:, t+1, i] = self.F @ x_resampled[:, t, i] + v # システムノイズの付加
-                y_pre[t+1, i] = H @ x[:, t+1, i] 
-                w[t, i] = self.norm_likelihood(self.y[t], y_pre[t+1, i], R) # y[t]に対する各粒子の尤度
+                y_pred[t+1, i] = H @ x[:, t+1, i] 
+                w[t, i] = self.norm_likelihood(self.y[t], y_pred[t+1, i], R) # y[t]に対する各粒子の尤度
                 
             w_normed[t] = w[t]/np.sum(w[t]) # 規格化
             l[t] = np.log(np.sum(w[t])) # 各時刻対数尤度
@@ -150,30 +140,19 @@ class ParticleFilter(object):
             #k = self.resampling(w_normed[t]) # リリサンプリングで取得した粒子の添字
             k = self.resampling2(w_normed[t]) # リリサンプリングで取得した粒子の添字（層化サンプリング）
             x_resampled[:, t+1] = x[:, t+1, k]
-            self.sigma = np.exp(x_resampled[2, t+1, :])
-            self.sigma_.append(self.sigma)
-
-            # x_mean = self.get_filtered_value_em(w_normed[t], x[0, t+1])
-            # x2_mean = self.get_filtered_value_em_2(w_normed[t], x[0, t+1])
-            # sigma_mean = self.get_filtered_value_em(w_normed[t], x[2, t+1])
-            # sigma2_mean = self.get_filtered_value_em_2(w_normed[t], x[2, t+1])
-
+            
             self.x_mean = np.mean(x_resampled[0, t+1, :])
             x2_mean = np.mean(x_resampled[0, t+1, :]**2)
-            sigma_mean = np.mean(x_resampled[2, t+1, :])
-            sigma2_mean = np.mean(x_resampled[2, t+1, :]**2)
 
             self.x_mean_.append(self.x_mean)
             x2_mean_.append(x2_mean)
-            sigma_mean_.append(sigma_mean)
-            sigma2_mean_.append(sigma2_mean)
 
             if t >= 1:
-                self.lse_phi(self.x_mean_, x2_mean_, sigma_mean_, sigma2_mean_)
+                self.lse_phi(self.x_mean_, x2_mean_)
+            self.log_sigma = np.log(self.sigma)
             self.phi1_.append(self.phi1)
             self.phi2_.append(self.phi2)
-            self.alpha_.append(self.alpha)
-
+            self.log_sigma_.append(self.log_sigma)
 
         # 全体の対数尤度
         self.log_likelihood = np.sum(l) - T*np.log(self.n_particle)
@@ -184,11 +163,12 @@ class ParticleFilter(object):
         self.w_normed = w_normed
         self.l = l
 
-    def get_filtered_value(self, a):
+    def get_filtered_value(self):
         """
         尤度の重みで加重平均した値でフィルタリングされ値を算出
         """
-        return np.diag(np.dot(self.w_normed, self.x[a, 1:].T))
+        return np.diag(np.dot(self.w_normed, self.x[0, 1:].T))
+
 
     def hid_draw_graph(self):
         # グラフ描画
@@ -200,7 +180,7 @@ class ParticleFilter(object):
         # plt.plot(range(T), self.y)
         plt.plot(true_x[:, 0], label='true', color='orange')
         # plt.plot(self.y, label='observed')
-        plt.plot(self.get_filtered_value(0), label='x_pred')
+        plt.plot(self.get_filtered_value(), label='x_pred')
 
         # for t in range(T):
         #     plt.scatter(np.ones(self.n_particle)*t, self.x[0, t], color="r", s=0.1, alpha=0.01)
@@ -210,7 +190,7 @@ class ParticleFilter(object):
 
         plt.subplot(2, 1, 2)
         plt.plot(true_x[:, 2], label='true',color='orange')
-        plt.plot(self.get_filtered_value(2),label='sigma_pred')
+        plt.plot(self.log_sigma_,label='sigma_pred')
         # plt.plot(np.exp(self.get_filtered_value(2)),label='sigma_pred')
         
         # true_sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')

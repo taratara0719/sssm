@@ -62,7 +62,7 @@ def main():
         #     Y.append(y)
         #     sigma_.append(sigma)
         # else:
-        #     sigma = np.exp(2)
+        #     sigma = np.exp(1)
         #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
         #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
         #     x_[-1, 0] = np.log(sigma)
@@ -83,15 +83,15 @@ def main():
     #for i in range(r):
         #plt.plot(x[:,i], label='x{}'.format(i+1))
     a, b, c = np.array(np.concatenate(X, axis=1))
-    plt.plot(a, label='x')
+    plt.plot(a, label='x', linewidth=0.8)
     plt.legend()
     
     plt.subplot(3, 1, 2)
-    plt.plot(Y, label='y', color='red')
+    plt.plot(Y, label='y', color='red', linewidth=0.8)
     plt.legend()
 
     plt.subplot(3, 1, 3)
-    plt.plot(c, label='sigma', color='orange')
+    plt.plot(c, label='sigma', color='orange', linewidth=0.8)
     plt.xlabel('time')
     plt.legend()
 
