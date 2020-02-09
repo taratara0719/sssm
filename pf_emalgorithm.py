@@ -256,5 +256,56 @@ print(pf.phi1_[-1])
 print(pf.phi2_[-1])
 mse = np.mean((y - pf.x_mean_[1:])**2)
 print(mse)
-pf.hid_draw_graph()
-pf.para_draw_graph()
+# pf.hid_draw_graph()
+# pf.para_draw_graph()
+
+T = len(self.y)
+true_x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
+
+plt.subplot(2, 1, 1)
+# plt.figure(figsize=(16,8))
+# plt.plot(range(T), self.y)
+plt.plot(true_x[:, 0], label='true', color='orange')
+# plt.plot(self.y, label='observed')
+plt.plot(self.get_filtered_value(0), label='x_pred')
+
+# for t in range(T):
+#     plt.scatter(np.ones(self.n_particle)*t, self.x[0, t], color="r", s=0.1, alpha=0.01)
+
+plt.title("MSE ={0:.5f}".format( self.mse))
+plt.legend()
+
+plt.subplot(2, 1, 2)
+plt.plot(true_x[:, 2], label='true',color='orange')
+plt.plot(self.get_filtered_value(2),label='sigma_pred')
+# plt.plot(np.exp(self.get_filtered_value(2)),label='sigma_pred')
+
+# true_sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
+# plt.plot(true_sigma, label='true')
+# for t in range(T):
+#     plt.scatter(np.ones(self.n_particle)*t, self.x[2, t], color="r", s=0.1, alpha=0.01)
+plt.legend()
+
+plt.savefig('../fig/particle_ar2_pred.png')
+print('fig saved')
+plt.show()
+
+plt.subplot(2, 1, 1)
+plt.plot(self.phi1_, label='estimate')
+plt.hlines(y = 0.529, xmin = 0, xmax = len(self.y), label = 'true', color='orange')
+plt.title("phi1")
+plt.legend()
+
+plt.subplot(2, 1, 2)
+plt.plot(self.phi2_, label='estimate')
+plt.hlines(y = 0.120, xmin = 0, xmax = len(self.y), label = 'true', color='orange')
+plt.title("phi2")
+plt.legend()
+
+# plt.subplot(3, 1, 3)
+# plt.plot(self.alpha_, label='estimate')
+# plt.hlines(y = 1, xmin = 0, xmax = len(self.y), label = 'true', color='orange')
+# plt.title("alpha")
+# plt.legend()
+
+plt.show()

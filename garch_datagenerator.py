@@ -15,7 +15,7 @@ def main():
     phi1 = 0.529
     phi2 = 0.120
     
-    sigma = np.exp(0.5)
+    sigma = np.exp(0)
     a = 1
     b = 0.001
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
@@ -30,7 +30,7 @@ def main():
     R = 0.1
 
     #  test data generating
-    T = 5000  # number of sampling
+    T = 2000  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     z = np.mat([np.log(sigma)])
     x_ = np.vstack([x, z])
@@ -43,33 +43,33 @@ def main():
 
     for i in range(T-1):
         # 通常の分散不均一モデル
-        x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
-        sigma = np.exp(x_[-1, 0])
-        sigma_.append(sigma)
-        Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
-        X.append(x_)
-        y = H @ x_ + np.random.normal(0, R)
-        Y.append(y)
+        # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
+        # sigma = np.exp(x_[-1, 0])
+        # sigma_.append(sigma)
+        # Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
+        # X.append(x_)
+        # y = H @ x_ + np.random.normal(0, R)
+        # Y.append(y)
 
         # 分散切り替え用モデル
-        # if i<= T/2:
-        #     x[-1, 0] = np.log(sigma)
-        #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-        #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
-        #     x[-1, 0] = np.log(sigma)
-        #     X.append(x_)
-        #     y = H @ x_ + np.random.normal(0, R)
-        #     Y.append(y)
-        #     sigma_.append(sigma)
-        # else:
-        #     sigma = np.exp(1)
-        #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-        #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
-        #     x_[-1, 0] = np.log(sigma)
-        #     X.append(x_)
-        #     y = H @ x_ + np.random.normal(0, R)
-        #     Y.append(y)
-        #     sigma_.append(sigma)
+        if i<= T/2:
+            x[-1, 0] = np.log(sigma)
+            Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
+            x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+            x[-1, 0] = np.log(sigma)
+            X.append(x_)
+            y = H @ x_ + np.random.normal(0, R)
+            Y.append(y)
+            sigma_.append(sigma)
+        else:
+            sigma = np.exp(1)
+            Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
+            x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+            x_[-1, 0] = np.log(sigma)
+            X.append(x_)
+            y = H @ x_ + np.random.normal(0, R)
+            Y.append(y)
+            sigma_.append(sigma)
 
         # 分散一定
         # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
