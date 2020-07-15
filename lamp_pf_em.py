@@ -103,7 +103,7 @@ class ParticleFilter(object):
         x_resampled = np.zeros((3, T+1, self.n_particle))
 
         # 潜在変数の初期値
-        true_x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
+        true_x = np.genfromtxt(fname='../data/lamp_hid_states.txt', delimiter=',')
         
         initial_x = np.random.normal(0, 0.01, (3, self.n_particle)).T + true_x[0]
         x_resampled[:, 0, :] = initial_x.T
@@ -181,7 +181,7 @@ class ParticleFilter(object):
     def hid_draw_graph(self):
         # グラフ描画
         T = len(self.y)
-        true_x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
+        true_x = np.genfromtxt(fname='../data/lamp_hid_states.txt', delimiter=',')
 
         plt.subplot(2, 1, 1)
         # plt.figure(figsize=(16,8))
@@ -234,10 +234,10 @@ class ParticleFilter(object):
 
         plt.show()
 
-x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')
-y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
+x = np.genfromtxt(fname='../data/lamp_hid_states.txt', delimiter=',')
+y = np.genfromtxt(fname='../data/lamp_obs_states.txt', delimiter=',')
 
-pf = ParticleFilter(y, 10000)
+pf = ParticleFilter(y, 5000)
 pf.simulate()
 
 print(pf.phi1_[-1])

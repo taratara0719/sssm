@@ -1,3 +1,6 @@
+"""
+GARCH性を導入した時系列データの生成
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -7,8 +10,11 @@ import math
 sns.set(style='darkgrid')
 
 def main():
-    r = 1  # number of source components
-
+    """
+    初期値設定
+    システムモデル　x_t = F*x_t-1 + N(0, Q)
+    観測モデル　　　y_t = H*x_t + N(0, R)
+    """
     np.random.seed(20)
     #  system model
     #  AR(2)model parameter
@@ -20,10 +26,7 @@ def main():
     b = 0.001
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
     Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
-
     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-
-
 
     #  observation model
     H = np.mat([1, 0, 0])
@@ -40,9 +43,11 @@ def main():
     Y = [y]
     sigma_ = [sigma]
     
-
+    """
+    データ生成
+    """
     for i in range(T-1):
-        # 通常の分散不均一モデル
+        # ランダムウォークモデル
         # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
         # sigma = np.exp(x_[-1, 0])
         # sigma_.append(sigma)
@@ -79,19 +84,19 @@ def main():
 
 
 
-    plt.subplot(3, 1, 1)
+    plt.subplot(2, 1, 1)
     #for i in range(r):
         #plt.plot(x[:,i], label='x{}'.format(i+1))
     a, b, c = np.array(np.concatenate(X, axis=1))
-    plt.plot(a, label='x', linewidth=0.8)
+    plt.plot(a, label='x', linewidth=1.5)
     plt.legend()
     
-    plt.subplot(3, 1, 2)
-    plt.plot(Y, label='y', color='red', linewidth=0.8)
-    plt.legend()
+    # plt.subplot(3, 1, 2)
+    # plt.plot(Y, label='y', color='red', linewidth=0.8)
+    # plt.legend()
 
-    plt.subplot(3, 1, 3)
-    plt.plot(c, label='sigma', color='orange', linewidth=0.8)
+    plt.subplot(2, 1, 2)
+    plt.plot(c, label='sigma', color='orange', linewidth=1.5)
     plt.xlabel('time')
     plt.legend()
 
