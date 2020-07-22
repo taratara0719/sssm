@@ -1,4 +1,6 @@
 import numpy as np
+"""import matplotlib as mpl
+mpl.use('Agg')"""
 import matplotlib.pyplot as plt
 import seaborn as sns
 #from tqdm import tqdm
@@ -49,8 +51,8 @@ def main():
             Y = np.append(Y, y)
             sigma_ = np.append(sigma_, sigma)
         elif i <= (T*2)//3:
-            sigma = np.exp(3/T*i - 1)
-            x_[-1, 0] = 3/T*i - 1
+            sigma = np.exp(9/T*i - 3)
+            x_[-1, 0] = 9/T*i - 3
             Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
             x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
             X = np.append(X, x_)
@@ -58,7 +60,7 @@ def main():
             Y = np.append(Y, y)
             sigma_ = np.append(sigma_, sigma)
         else:
-            sigma = np.exp(1)
+            sigma = np.exp(3)
             Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
             x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
             x_[-1, 0] = np.log(sigma)

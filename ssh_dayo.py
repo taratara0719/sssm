@@ -1,1 +1,1 @@
-print('sshに成功しましたpart2。')
+print('sshできない')
