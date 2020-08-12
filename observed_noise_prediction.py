@@ -96,7 +96,7 @@ class ParticleFilter(object):
         self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
         self.sigma_ = [self.sigma]
 
-        self.init_initial()t
+        self.init_initial()
         
         #  observation model
         H = np.mat([1, 0, 0])
