@@ -23,7 +23,7 @@ def main():
     
     sigma = np.exp(0)
     a = 1
-    b = 0.001
+    b = 0.01
     F = np.mat([[phi1, phi2, 0], [1, 0, 0], [0, 0, a]])
     Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
@@ -33,7 +33,7 @@ def main():
     R = 0.1
 
     #  test data generating
-    T = 2000  # number of sampling
+    T = 1000  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     z = np.mat([np.log(sigma)])
     x_ = np.vstack([x, z])
@@ -48,33 +48,33 @@ def main():
     """
     for i in range(T-1):
         # ランダムウォークモデル
-        # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
-        # sigma = np.exp(x_[-1, 0])
-        # sigma_.append(sigma)
-        # Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
-        # X.append(x_)
-        # y = H @ x_ + np.random.normal(0, R)
-        # Y.append(y)
+         x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q, 1).T
+         sigma = np.exp(x_[-1, 0])
+         sigma_.append(sigma)
+         Q = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, b]])
+         X.append(x_)
+         y = H @ x_ + np.random.normal(0, R)
+         Y.append(y)
 
         # 分散切り替え用モデル
-        if i<= T/2:
-            x[-1, 0] = np.log(sigma)
-            Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-            x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
-            x[-1, 0] = np.log(sigma)
-            X.append(x_)
-            y = H @ x_ + np.random.normal(0, R)
-            Y.append(y)
-            sigma_.append(sigma)
-        else:
-            sigma = np.exp(1)
-            Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
-            x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
-            x_[-1, 0] = np.log(sigma)
-            X.append(x_)
-            y = H @ x_ + np.random.normal(0, R)
-            Y.append(y)
-            sigma_.append(sigma)
+        # if i<= T/2:
+        #     x[-1, 0] = np.log(sigma)
+        #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
+        #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+        #     x[-1, 0] = np.log(sigma)
+        #     X.append(x_)
+        #     y = H @ x_ + np.random.normal(0, R)
+        #     Y.append(y)
+        #     sigma_.append(sigma)
+        # else:
+        #     sigma = np.exp(1)
+        #     Q0 = np.mat([[sigma, 0, 0], [0, 0, 0], [0, 0, 0]])
+        #     x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
+        #     x_[-1, 0] = np.log(sigma)
+        #     X.append(x_)
+        #     y = H @ x_ + np.random.normal(0, R)
+        #     Y.append(y)
+        #     sigma_.append(sigma)
 
         # 分散一定
         # x_ = F @ x_ + np.random.multivariate_normal([0,0,0], Q0, 1).T
@@ -88,7 +88,7 @@ def main():
     #for i in range(r):
         #plt.plot(x[:,i], label='x{}'.format(i+1))
     a, b, c = np.array(np.concatenate(X, axis=1))
-    plt.plot(a, label='x', linewidth=1.5)
+    plt.plot(a, label='x', linewidth=1)
     plt.legend()
     
     # plt.subplot(3, 1, 2)
@@ -96,7 +96,7 @@ def main():
     # plt.legend()
 
     plt.subplot(2, 1, 2)
-    plt.plot(c, label='sigma', color='orange', linewidth=1.5)
+    plt.plot(c, label='sigma', color='orange', linewidth=1)
     plt.xlabel('time')
     plt.legend()
 
