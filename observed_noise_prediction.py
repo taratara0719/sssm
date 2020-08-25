@@ -16,10 +16,10 @@ class ParticleFilter(object):
         return (np.sqrt(2*np.pi*s2))**(-1) * np.exp(-(y-x)**2/(2*s2))
 
     def F_inv(self, w_cumsum, idx, u):
-            if np.any(w_cumsum < u) == False:
-                return 0
-            k = np.max(idx[w_cumsum < u])
-            return k+1
+        if np.any(w_cumsum < u) == False:
+            return 0
+        k = np.max(idx[w_cumsum < u])
+        return k+1
 
     def resampling(self, weights):
         w_cumsum = np.cumsum(weights)
@@ -70,13 +70,13 @@ class ParticleFilter(object):
         # self.f += log_sigma[-1]*log_sigma[-2]
         # self.g += log_sigma2[-2]
         if len(x) <= self.T:
-            self.h += (y[len(x)-1] - x[-1])**2
+            self.h += (self.y[len(x)-1] - x[-1])**2
         if len(x) >= 3:
             self.phi1 = (self.b * self.c - self.d * self.e) / (self.a * self.b - self.d**2)
             self.phi2 = (self.a * self.e - self.c * self.d) / (self.a * self.b - self.d**2)
             # self.alpha = self.f / self.g
             self.F = np.mat([[self.phi1, self.phi2, 0], [1, 0, 0], [0, 0, self.alpha]])
-            self.R = self.h / (2 * len(x))
+            self.R = np.sqrt(self.h / len(x))
 
         return self
 
@@ -246,7 +246,7 @@ class ParticleFilter(object):
 """x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')"""
 y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
 
-pf = ParticleFilter(y, 100, len(y))
+pf = ParticleFilter(y, 1000, len(y))
 pf.simulate()
 
 print(pf.phi1_[-1])
