@@ -246,7 +246,7 @@ class ParticleFilter(object):
 """x = np.genfromtxt(fname='../data/garch_hid_states.txt', delimiter=',')"""
 y = np.genfromtxt(fname='../data/garch_obs_states.txt', delimiter=',')
 
-pf = ParticleFilter(y, 1000, len(y))
+pf = ParticleFilter(y, 100, len(y))
 pf.simulate()
 
 print(pf.phi1_[-1])
