@@ -3,6 +3,7 @@ GARCH性を導入した時系列データの生成
 """
 import numpy as np
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import seaborn as sns
 from tqdm import tqdm
 import math
@@ -33,7 +34,7 @@ def main():
     R = 0.1
 
     #  test data generating
-    T = 1000  # number of sampling
+    T = 5000  # number of sampling
     x = np.mat(np.random.normal(0, 0.3, (2, 1)))
     z = np.mat([np.log(sigma)])
     x_ = np.vstack([x, z])

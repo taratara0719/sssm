@@ -14,4 +14,3 @@ plt.ylabel('output')
 
 plt.show()
 
-print(data['EEG'][0])

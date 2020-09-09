@@ -131,7 +131,7 @@ class ParticleFilter(object):
             print("\r calculating... t={}".format(t), end="")
             for i in range(self.n_particle):
                 # AR(2)モデルを適用
-                self.Q = np.mat([[self.sigma[i], 0, 0], [0, 0, 0], [0, 0, 0.01]])
+                self.Q = np.mat([[self.sigma[i], 0, 0], [0, 0, 0], [0, 0, 0.05]])
                 v = np.random.multivariate_normal([0,0,0], self.Q, 1) # System Noise　#--- (2)
                 x[:, t+1, i] = self.F @ x_resampled[:, t, i] + v # システムノイズの付加
                 y_pre[t+1, i] = H @ x[:, t+1, i] 
@@ -191,7 +191,7 @@ class ParticleFilter(object):
         plt.plot(self.get_filtered_value(0), label='x_pred')
 
         # for t in range(T):
-        #     plt.scatter(np.ones(self.n_particle)*t, self.x[0, t], color="r", s=0.1, alpha=0.01)
+        #     plt.scatter(np.ones(self.n_particle)*t, self.x[0, t], color="r", s=0.1, alpha=0.1)
 
         plt.title("MSE ={0:.5f}".format( self.mse))
         plt.legend()
@@ -204,7 +204,7 @@ class ParticleFilter(object):
         # true_sigma = np.genfromtxt(fname='../data/garch_sigma.txt', delimiter=',')
         # plt.plot(true_sigma, label='true')
         # for t in range(T):
-        #     plt.scatter(np.ones(self.n_particle)*t, self.x[2, t], color="r", s=0.1, alpha=0.01)
+        #     plt.scatter(np.ones(self.n_particle)*t, self.x[2, t], color="r", s=0.1, alpha=0.1)
         plt.legend()
 
         plt.savefig('../fig/particle_ar2_pred.png')
